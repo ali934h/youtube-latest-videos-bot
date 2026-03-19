@@ -1,0 +1,13 @@
+{
+  "name": "youtube-latest-videos-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot to fetch latest YouTube channel videos, powered by Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

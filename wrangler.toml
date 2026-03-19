@@ -1,0 +1,9 @@
+name = "youtube-latest-videos-bot"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+# Set secrets via: npx wrangler secret put <KEY>
+# TELEGRAM_BOT_TOKEN
+# YOUTUBE_API_KEY
+# ALLOWED_USER_IDS
