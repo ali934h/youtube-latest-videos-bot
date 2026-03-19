@@ -2,26 +2,36 @@
 const TYPE_EMOJI = {
   live: '🔴',
   upcoming: '🔔',
-  none: '🎬',
+  short: '🯆',
+  video: '🎬',
+};
+
+const TYPE_LABEL = {
+  live: 'LIVE',
+  upcoming: 'Upcoming',
+  short: 'Short',
+  video: 'Video',
 };
 
 export function formatVideoList(videos, handle) {
   const header = `📺 *Latest ${videos.length} videos from @${escapeMarkdownV2(handle)}*\n`;
-  const divider = '─────────────────\n';
+  const divider = '─────────────────\n`;
 
   const lines = videos.map((video, i) => {
-    const emoji = TYPE_EMOJI[video.liveBroadcastContent] ?? '🎬';
-    const label =
-      video.liveBroadcastContent === 'live'
-        ? ' _\(LIVE NOW\)_'
-        : video.liveBroadcastContent === 'upcoming'
-        ? ' _\(Upcoming\)_'
-        : '';
+    const emoji = TYPE_EMOJI[video.type] ?? '🎬';
+    const label = TYPE_LABEL[video.type] ?? 'Video';
     const title = escapeMarkdownV2(video.title);
-    return `${i + 1}\. ${emoji} [${title}](https://youtu\.be/${video.id})${label}`;
+    const duration = video.type === 'live' ? '' : ` \| ${escapeMarkdownV2(video.duration)}`;
+    const date = escapeMarkdownV2(video.publishedAt);
+
+    return (
+      `${i + 1}\. ${emoji} [${title}](https://youtu\.be/${video.id})\n` +
+      `   🏷 ${label}${duration}\n` +
+      `   📅 ${date}`
+    );
   });
 
-  return header + divider + lines.join('\n');
+  return header + divider + lines.join('\n\n');
 }
 
 function escapeMarkdownV2(text) {
