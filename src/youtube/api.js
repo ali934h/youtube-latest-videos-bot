@@ -16,6 +16,7 @@ async function resolveChannelId(handle, apiKey) {
 
 // Parses ISO 8601 duration (PT1H2M3S) to total seconds
 function parseDuration(iso) {
+  if (!iso) return 0;
   const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 0;
   const h = parseInt(match[1] || 0);
@@ -34,11 +35,15 @@ function formatDuration(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-// Determines video type based on duration and liveBroadcastContent
-function getVideoType(liveBroadcastContent, durationSeconds) {
+// Determines video type:
+// - live: currently broadcasting
+// - upcoming: scheduled stream
+// - stream: archived/ended live stream (has liveStreamingDetails)
+// - video: regular video
+function getVideoType(liveBroadcastContent, hasLiveStreamingDetails) {
   if (liveBroadcastContent === 'live') return 'live';
   if (liveBroadcastContent === 'upcoming') return 'upcoming';
-  if (durationSeconds > 0 && durationSeconds <= 60) return 'short';
+  if (hasLiveStreamingDetails) return 'stream';
   return 'video';
 }
 
@@ -76,9 +81,9 @@ export async function getLatestVideos(handle, count, apiKey) {
   const items = searchData.items.slice(0, count);
   const videoIds = items.map((i) => i.id.videoId).join(',');
 
-  // Fetch duration and content details
+  // Fetch contentDetails + liveStreamingDetails to detect archived streams
   const detailsUrl =
-    `${BASE_URL}/videos?part=contentDetails` +
+    `${BASE_URL}/videos?part=contentDetails,liveStreamingDetails` +
     `&id=${videoIds}` +
     `&key=${apiKey}`;
 
@@ -88,23 +93,25 @@ export async function getLatestVideos(handle, count, apiKey) {
   const detailsMap = {};
   if (detailsData.items) {
     for (const item of detailsData.items) {
-      detailsMap[item.id] = item.contentDetails;
+      detailsMap[item.id] = {
+        contentDetails: item.contentDetails,
+        hasLiveStreamingDetails: !!item.liveStreamingDetails,
+      };
     }
   }
 
   return items.map((item) => {
     const videoId = item.id.videoId;
-    const details = detailsMap[videoId];
-    const durationSeconds = details ? parseDuration(details.duration) : 0;
+    const details = detailsMap[videoId] || {};
+    const durationSeconds = details.contentDetails ? parseDuration(details.contentDetails.duration) : 0;
     const liveBroadcastContent = item.snippet.liveBroadcastContent;
-    const type = getVideoType(liveBroadcastContent, durationSeconds);
+    const type = getVideoType(liveBroadcastContent, details.hasLiveStreamingDetails);
 
     return {
       id: videoId,
       title: item.snippet.title,
       type,
       duration: formatDuration(durationSeconds),
-      durationSeconds,
       publishedAt: toIranTime(item.snippet.publishedAt),
     };
   });
