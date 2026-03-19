@@ -35,7 +35,8 @@ export async function getLatestVideos(handle, count, apiKey) {
 
   if (!data.items) throw new Error('Failed to fetch videos from YouTube.');
 
-  return data.items.map((item) => ({
+  // Slice to exact count in case API returns more
+  return data.items.slice(0, count).map((item) => ({
     id: item.id.videoId,
     title: item.snippet.title,
     liveBroadcastContent: item.snippet.liveBroadcastContent,
