@@ -15,7 +15,7 @@ const TYPE_LABEL = {
 
 export function formatVideoList(videos, handle) {
   const header = `📺 *Latest ${videos.length} videos from @${escapeMarkdownV2(handle)}*\n`;
-  const divider = '─────────────────\n`;
+  const divider = '─────────────────\n';
 
   const lines = videos.map((video, i) => {
     const emoji = TYPE_EMOJI[video.type] ?? '🎬';
