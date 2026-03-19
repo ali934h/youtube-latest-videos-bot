@@ -2,14 +2,14 @@
 const TYPE_EMOJI = {
   live: '🔴',
   upcoming: '🔔',
-  short: '🯆',
+  stream: '📡',
   video: '🎬',
 };
 
 const TYPE_LABEL = {
-  live: 'LIVE',
+  live: 'Live',
   upcoming: 'Upcoming',
-  short: 'Short',
+  stream: 'Stream',
   video: 'Video',
 };
 
