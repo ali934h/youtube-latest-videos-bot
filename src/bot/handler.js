@@ -18,8 +18,12 @@ export async function handleWebhook(request, env) {
 
   const chatId = message.chat.id;
   const userId = message.from?.id;
-  // Normalize command: strip bot username suffix (e.g. /start@mybot -> /start)
-  const text = message.text.trim().replace(/(@\S+)/, '').trim();
+  const rawText = message.text.trim();
+
+  // Normalize commands only: strip bot username suffix (e.g. /start@mybot -> /start)
+  const text = rawText.startsWith('/')
+    ? rawText.replace(/\/([a-zA-Z0-9_]+)(@\S+)?/, '/$1').trim()
+    : rawText;
 
   // Access control
   if (!isUserAllowed(userId, env.ALLOWED_USER_IDS)) {
