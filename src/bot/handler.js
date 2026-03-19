@@ -18,7 +18,8 @@ export async function handleWebhook(request, env) {
 
   const chatId = message.chat.id;
   const userId = message.from?.id;
-  const text = message.text.trim();
+  // Normalize command: strip bot username suffix (e.g. /start@mybot -> /start)
+  const text = message.text.trim().replace(/(@\S+)/, '').trim();
 
   // Access control
   if (!isUserAllowed(userId, env.ALLOWED_USER_IDS)) {
@@ -35,7 +36,10 @@ export async function handleWebhook(request, env) {
       `\`@ChannelHandle 5\`\n` +
       `\`https://www\.youtube\.com/@Channel 10\`\n\n` +
       `_Supports videos, live streams, and premieres\._`;
-    await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, welcome, 'MarkdownV2');
+    const result = await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, welcome, 'MarkdownV2');
+    if (!result.ok) {
+      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, 'Welcome to YouTube Latest Videos Bot!\n\nSend: @ChannelHandle 5');
+    }
     return new Response('OK', { status: 200 });
   }
 
@@ -48,7 +52,10 @@ export async function handleWebhook(request, env) {
       `Or with full URL:\n` +
       `\`https://www\.youtube\.com/@Channel 10\`\n\n` +
       `*Max videos per request:* 50`;
-    await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, help, 'MarkdownV2');
+    const result = await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, help, 'MarkdownV2');
+    if (!result.ok) {
+      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, 'Send: @ChannelHandle 5 (max 50 videos)');
+    }
     return new Response('OK', { status: 200 });
   }
 
@@ -58,8 +65,7 @@ export async function handleWebhook(request, env) {
     await sendMessage(
       env.TELEGRAM_BOT_TOKEN,
       chatId,
-      '❓ *Invalid format\.* \n\nPlease send in this format:\n`@ChannelHandle 5`',
-      'MarkdownV2'
+      '❓ Invalid format.\n\nPlease send in this format:\n@ChannelHandle 5'
     );
     return new Response('OK', { status: 200 });
   }
@@ -70,32 +76,31 @@ export async function handleWebhook(request, env) {
   await sendMessage(
     env.TELEGRAM_BOT_TOKEN,
     chatId,
-    `🔍 Fetching the latest *${count}* videos from *${escapeMarkdownV2(handle)}*\.\.\.`,
-    'MarkdownV2'
+    `🔍 Fetching the latest ${count} videos from @${handle}...`
   );
 
   try {
     const videos = await getLatestVideos(handle, count, env.YOUTUBE_API_KEY);
 
     if (!videos || videos.length === 0) {
-      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, '😕 No videos found for this channel\.');
+      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, '😕 No videos found for this channel.');
       return new Response('OK', { status: 200 });
     }
 
     const reply = formatVideoList(videos, handle);
-    await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, reply, 'MarkdownV2');
+    const result = await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, reply, 'MarkdownV2');
+    if (!result.ok) {
+      // Fallback: send plain text if MarkdownV2 fails
+      const plain = videos.map((v, i) => `${i + 1}. ${v.title}\nhttps://youtu.be/${v.id}`).join('\n\n');
+      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, `Latest ${videos.length} videos from @${handle}:\n\n${plain}`);
+    }
   } catch (err) {
     await sendMessage(
       env.TELEGRAM_BOT_TOKEN,
       chatId,
-      `⚠️ ${escapeMarkdownV2(err.message)}`,
-      'MarkdownV2'
+      `⚠️ Error: ${err.message}`
     );
   }
 
   return new Response('OK', { status: 200 });
-}
-
-function escapeMarkdownV2(text) {
-  return String(text).replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
 }
