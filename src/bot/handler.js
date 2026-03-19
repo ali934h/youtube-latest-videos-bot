@@ -34,32 +34,26 @@ export async function handleWebhook(request, env) {
   // Handle /start command
   if (text === '/start') {
     const welcome =
-      `👋 *Welcome to YouTube Latest Videos Bot\!*\n\n` +
-      `Send me a YouTube channel handle and how many recent videos you want\.\n\n` +
-      `*Format:*\n` +
-      `\`@ChannelHandle 5\`\n` +
-      `\`https://www\.youtube\.com/@Channel 10\`\n\n` +
-      `_Supports videos, live streams, and premieres\._`;
-    const result = await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, welcome, 'MarkdownV2');
-    if (!result.ok) {
-      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, 'Welcome to YouTube Latest Videos Bot!\n\nSend: @ChannelHandle 5');
-    }
+      `👋 <b>Welcome to YouTube Latest Videos Bot!</b>\n\n` +
+      `Send me a YouTube channel handle and how many recent videos you want.\n\n` +
+      `<b>Format:</b>\n` +
+      `<code>@ChannelHandle 5</code>\n` +
+      `<code>https://www.youtube.com/@Channel 10</code>\n\n` +
+      `<i>Supports videos, live streams, shorts and premieres.</i>`;
+    await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, welcome, 'HTML');
     return new Response('OK', { status: 200 });
   }
 
   // Handle /help command
   if (text === '/help') {
     const help =
-      `📖 *How to use:*\n\n` +
-      `Send a channel handle \+ number of videos:\n` +
-      `\`@ChannelHandle 5\`\n\n` +
+      `📖 <b>How to use:</b>\n\n` +
+      `Send a channel handle + number of videos:\n` +
+      `<code>@ChannelHandle 5</code>\n\n` +
       `Or with full URL:\n` +
-      `\`https://www\.youtube\.com/@Channel 10\`\n\n` +
-      `*Max videos per request:* 50`;
-    const result = await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, help, 'MarkdownV2');
-    if (!result.ok) {
-      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, 'Send: @ChannelHandle 5 (max 50 videos)');
-    }
+      `<code>https://www.youtube.com/@Channel 10</code>\n\n` +
+      `<b>Max videos per request:</b> 50`;
+    await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, help, 'HTML');
     return new Response('OK', { status: 200 });
   }
 
@@ -69,18 +63,19 @@ export async function handleWebhook(request, env) {
     await sendMessage(
       env.TELEGRAM_BOT_TOKEN,
       chatId,
-      '❓ Invalid format.\n\nPlease send in this format:\n@ChannelHandle 5'
+      '❓ <b>Invalid format.</b>\n\nPlease send in this format:\n<code>@ChannelHandle 5</code>',
+      'HTML'
     );
     return new Response('OK', { status: 200 });
   }
 
   const { handle, count } = parsed;
 
-  // Loading indicator
   await sendMessage(
     env.TELEGRAM_BOT_TOKEN,
     chatId,
-    `🔍 Fetching the latest ${count} videos from @${handle}...`
+    `🔍 Fetching the latest <b>${count}</b> videos from <b>@${handle}</b>...`,
+    'HTML'
   );
 
   try {
@@ -92,12 +87,7 @@ export async function handleWebhook(request, env) {
     }
 
     const reply = formatVideoList(videos, handle);
-    const result = await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, reply, 'MarkdownV2');
-    if (!result.ok) {
-      // Fallback: send plain text if MarkdownV2 fails
-      const plain = videos.map((v, i) => `${i + 1}. ${v.title}\nhttps://youtu.be/${v.id}`).join('\n\n');
-      await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, `Latest ${videos.length} videos from @${handle}:\n\n${plain}`);
-    }
+    await sendMessage(env.TELEGRAM_BOT_TOKEN, chatId, reply, 'HTML');
   } catch (err) {
     await sendMessage(
       env.TELEGRAM_BOT_TOKEN,

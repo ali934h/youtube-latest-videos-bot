@@ -1,4 +1,4 @@
-// Formats the list of videos into a Telegram MarkdownV2 message
+// Formats the list of videos into a Telegram HTML message
 const TYPE_EMOJI = {
   live: '🔴',
   upcoming: '🔔',
@@ -14,19 +14,19 @@ const TYPE_LABEL = {
 };
 
 export function formatVideoList(videos, handle) {
-  const header = `📺 *Latest ${videos.length} videos from @${escapeMarkdownV2(handle)}*\n`;
+  const header = `📺 <b>Latest ${videos.length} videos from @${escapeHtml(handle)}</b>\n`;
   const divider = '─────────────────\n';
 
   const lines = videos.map((video, i) => {
     const emoji = TYPE_EMOJI[video.type] ?? '🎬';
     const label = TYPE_LABEL[video.type] ?? 'Video';
-    const title = escapeMarkdownV2(video.title);
-    const duration = video.type === 'live' ? '' : ` \| ${escapeMarkdownV2(video.duration)}`;
-    const date = escapeMarkdownV2(video.publishedAt);
+    const duration = video.type === 'live' ? '' : ` | ${escapeHtml(video.duration)}`;
+    const date = escapeHtml(video.publishedAt);
+    const title = escapeHtml(video.title);
 
     return (
-      `${i + 1}\. ${emoji} [${title}](https://youtu\.be/${video.id})\n` +
-      `   🏷 ${label}${duration}\n` +
+      `${i + 1}. ${emoji} <a href="https://youtu.be/${video.id}">${title}</a>\n` +
+      `   🏷 <b>${label}</b>${duration}\n` +
       `   📅 ${date}`
     );
   });
@@ -34,6 +34,9 @@ export function formatVideoList(videos, handle) {
   return header + divider + lines.join('\n\n');
 }
 
-function escapeMarkdownV2(text) {
-  return String(text).replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
